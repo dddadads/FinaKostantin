@@ -1,0 +1,48 @@
+name: Build macOS Application
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyQt6 pyinstaller
+
+    - name: Build Mac App
+      run: |
+        pyinstaller --noconfirm --onedir --windowed \
+          --name "FinaKostantin" \
+          --add-data "data:data" \
+          --add-data "logic:logic" \
+          --add-data "ui:ui" \
+          --icon "assets/icon.png" \
+          main.py
+
+    - name: Sign App with Ad-Hoc Signature
+      run: |
+        codesign --force --deep --sign - dist/FinaKostantin.app
+
+    - name: Compress App to ZIP
+      run: |
+        cd dist
+        zip -r FinaKostantin-Mac.zip FinaKostantin.app
+
+    - name: Upload Finished App
+      uses: actions/upload-artifact@v4
+      with:
+        name: FinaKostantin-Mac-SuperGift
+        path: dist/FinaKostantin-Mac.zip
