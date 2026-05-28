@@ -1,4 +1,4 @@
-name: Build macOS Application (Web View with Icon)
+name: Build macOS Application
 
 on:
   push:
@@ -23,38 +23,9 @@ jobs:
         pip install pyinstaller
         pip install -r requirements.txt
 
-    - name: Create Launcher Script
-      run: |
-        cat << 'EOF' > run_app.py
-        import os
-        import sys
-        import subprocess
-        import time
-        import webbrowser
-
-        if __name__ == '__main__':
-            if hasattr(sys, '_MEIPASS'):
-                base_path = sys._MEIPASS
-            else:
-                base_path = os.path.dirname(os.path.abspath(__file__))
-                
-            # Запускаем именно main.py внутри пакета
-            script_path = os.path.join(base_path, 'main.py')
-            
-            proc = subprocess.Popen(
-                [sys.executable, "-m", "streamlit", "run", script_path, "--server.headless", "true"],
-                cwd=base_path
-            )
-            
-            time.sleep(3)
-            webbrowser.open("http://localhost:8501")
-            
-            proc.wait()
-        EOF
-
     - name: Build Mac App
       run: |
-        # Теперь упаковываем main.py вместо app.py
+        # Собираем напрямую main.py, Стримлит сам откроет браузер при запуске программы
         pyinstaller --noconfirm --onedir --windowed \
           --name "FinaKostantin" \
           --icon="assets/icon.icns" \
@@ -62,14 +33,7 @@ jobs:
           --add-data "logic:logic" \
           --add-data "data:data" \
           --add-data "assets:assets" \
-          run_app.py
-
-    - name: Copy Files to Bundle
-      run: |
-        cp main.py dist/FinaKostantin.app/Contents/MacOS/
-        cp -R logic dist/FinaKostantin.app/Contents/MacOS/
-        cp -R data dist/FinaKostantin.app/Contents/MacOS/
-        cp -R assets dist/FinaKostantin.app/Contents/MacOS/
+          main.py
 
     - name: Sign App
       run: |
