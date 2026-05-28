@@ -1,6 +1,6 @@
 def calculate_future_prediction(transactions):
     work_tx = [tx for tx in transactions if tx[1] == "Работа"]
-
+    
     if not work_tx:
         return (
             "⚠️ Нет данных о доходах\n\n"
