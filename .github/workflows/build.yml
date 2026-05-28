@@ -1,4 +1,4 @@
-name: Build macOS Application
+name: Build macOS PyQt6 Application
 
 on:
   push:
@@ -20,19 +20,18 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller
-        pip install -r requirements.txt
+        pip install pyinstaller PyQt6
 
     - name: Build Mac App
       run: |
-        # Собираем напрямую main.py, Стримлит сам откроет браузер при запуске программы
+        # Собираем чистое PyQt6 приложение из main.py
         pyinstaller --noconfirm --onedir --windowed \
           --name "FinaKostantin" \
           --icon="assets/icon.icns" \
-          --add-data "main.py:." \
           --add-data "logic:logic" \
           --add-data "data:data" \
           --add-data "assets:assets" \
+          --add-data "ui:ui" \
           main.py
 
     - name: Sign App
