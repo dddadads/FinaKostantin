@@ -10,40 +10,39 @@ jobs:
 
     steps:
     - name: Checkout code
-    uses: actions/checkout@v4
+      uses: actions/checkout@v4
 
     - name: Set up Python
-    uses: actions/setup-python@v5
-    with:
-      python-version: '3.11'
+      with:
+        python-version: '3.11'
+      uses: actions/setup-python@v5
 
     - name: Install dependencies
-    run: |
-      python -m pip install --upgrade pip
-      pip install PyQt6 pyinstaller
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyQt6 pyinstaller
 
     - name: Build Mac App
-    run: |
-      # Убрали --windowed (теперь включена консоль), чтобы увидеть ошибку при вылете
-      pyinstaller --noconfirm --onedir \
-        --name "FinaKostantin" \
-        --add-data "logic:logic" \
-        --add-data "data:data" \
-        --add-data "assets:assets" \
-        --add-data "ui:ui" \
-        main.py
+      run: |
+        pyinstaller --noconfirm --onedir \
+          --name "FinaKostantin" \
+          --add-data "logic:logic" \
+          --add-data "data:data" \
+          --add-data "assets:assets" \
+          --add-data "ui:ui" \
+          main.py
 
-  - name: Sign App with Ad-Hoc Signature
-    run: |
-      codesign --force --deep --sign - dist/FinaKostantin.app
+    - name: Sign App with Ad-Hoc Signature
+      run: |
+        codesign --force --deep --sign - dist/FinaKostantin.app
 
-  - name: Compress App to ZIP
-    run: |
-      cd dist
-      zip -r FinaKostantin-Mac.zip FinaKostantin.app
+    - name: Compress App to ZIP
+      run: |
+        cd dist
+        zip -r FinaKostantin-Mac.zip FinaKostantin.app
 
-  - name: Upload Finished App
-    uses: actions/upload-artifact@v4
-    with:
-      name: FinaKostantin-Mac-SuperGift
-      path: dist/FinaKostantin-Mac.zip
+    - name: Upload Finished App
+      uses: actions/upload-artifact@v4
+      with:
+        name: FinaKostantin-Mac-SuperGift
+        path: dist/FinaKostantin-Mac.zip
