@@ -1,4 +1,4 @@
-name: Build macOS PyQt6 Application
+name: Build macOS Application
 
 on:
   push:
@@ -15,30 +15,29 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.14'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller PyQt6
+        pip install PyQt6 pyinstaller streamlit
 
     - name: Build Mac App
       run: |
-        # Собираем чистое PyQt6 приложение из main.py
+        # Собираем БЕЗ жесткой привязки к иконке, чтобы не было ошибок,
+        # и используем двоеточие (:) для путей мак-системы
         pyinstaller --noconfirm --onedir --windowed \
           --name "FinaKostantin" \
-          --icon="assets/icon.icns" \
           --add-data "logic:logic" \
           --add-data "data:data" \
           --add-data "assets:assets" \
-          --add-data "ui:ui" \
           main.py
 
-    - name: Sign App
+    - name: Sign App with Ad-Hoc Signature
       run: |
         codesign --force --deep --sign - dist/FinaKostantin.app
 
-    - name: Compress App
+    - name: Compress App to ZIP
       run: |
         cd dist
         zip -r FinaKostantin-Mac.zip FinaKostantin.app
