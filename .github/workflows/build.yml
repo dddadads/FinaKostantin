@@ -1,4 +1,4 @@
-name: Build macOS Application
+name: Build macOS Application (Web View)
 
 on:
   push:
@@ -13,30 +13,61 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Python
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-      uses: actions/setup-python@v5
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install PyQt6 pyinstaller
+        pip install pyinstaller streamlit
+
+    - name: Create Launcher Script
+      run: |
+        cat << 'EOF' > run_app.py
+        import os
+        import sys
+        import subprocess
+        import time
+        import webbrowser
+
+        if __name__ == '__main__':
+            # Находим путь к app.py внутри собранного пакета
+            base_path = os.path.dirname(sys.executable) if hasattr(sys, '_MEIPASS') else os.path.dirname(__file__)
+            script_path = os.path.join(base_path, 'app.py')
+            
+            # Запускаем локальный сервер Streamlit
+            proc = subprocess.Popen([sys.executable, "-m", "streamlit", "run", script_path, "--server.headless", "true"])
+            
+            # Даем серверу секунду на старт и открываем приложение
+            time.sleep(2)
+            webbrowser.open("http://localhost:8501")
+            
+            proc.wait()
+        EOF
 
     - name: Build Mac App
       run: |
-        pyinstaller --noconfirm --onedir \
+        pyinstaller --noconfirm --onedir --windowed \
           --name "FinaKostantin" \
+          --add-data "app.py:." \
           --add-data "logic:logic" \
           --add-data "data:data" \
           --add-data "assets:assets" \
-          --add-data "ui:ui" \
-          main.py
+          run_app.py
 
-    - name: Sign App with Ad-Hoc Signature
+    - name: Copy app.py to Bundle
+      run: |
+        cp app.py dist/FinaKostantin.app/Contents/MacOS/
+        cp -R logic dist/FinaKostantin.app/Contents/MacOS/
+        cp -R data dist/FinaKostantin.app/Contents/MacOS/
+        cp -R assets dist/FinaKostantin.app/Contents/MacOS/
+
+    - name: Sign App
       run: |
         codesign --force --deep --sign - dist/FinaKostantin.app
 
-    - name: Compress App to ZIP
+    - name: Compress App
       run: |
         cd dist
         zip -r FinaKostantin-Mac.zip FinaKostantin.app
