@@ -57,7 +57,7 @@ jobs:
         pyinstaller --noconfirm --onedir --windowed \
           --name "FinaKostantin" \
           --icon="assets/icon.icns" \
-          --add-data "app.py:." \
+          --add-data "main.py:." \
           --add-data "logic:logic" \
           --add-data "data:data" \
           --add-data "assets:assets" \
