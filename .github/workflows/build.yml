@@ -15,7 +15,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.14'
 
     - name: Install dependencies
       run: |
@@ -24,15 +24,15 @@ jobs:
 
     - name: Build Mac App
       run: |
-        # Собираем чистое приложение в один файл-пакет
-        pyinstaller --noconfirm --onefile --windowed \
+        pyinstaller --noconfirm --onedir --windowed \
           --name "FinaKostantin" \
           --add-data "data:data" \
           --add-data "logic:logic" \
           --add-data "ui:ui" \
+          --icon "assets/icon.png" \
           main.py
 
-    - name: Compress App to ZIP for easy download
+    - name: Compress App to ZIP
       run: |
         cd dist
         zip -r FinaKostantin-Mac.zip FinaKostantin.app
