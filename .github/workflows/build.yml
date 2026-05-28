@@ -1,97 +1,80 @@
-name: Build macOS Application
-
-
+name: Build macOS Application (Web View)
 
 on:
-
   push:
-
     branches: [ main, master ]
 
-
-
 jobs:
-
   build:
-
     runs-on: macos-latest
 
-
-
     steps:
-
     - name: Checkout code
-
       uses: actions/checkout@v4
 
-
-
     - name: Set up Python
-
       uses: actions/setup-python@v5
-
       with:
-
-        python-version: '3.14'
-
-
+        python-version: '3.11'
 
     - name: Install dependencies
-
       run: |
-
         python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -r requirements.txt
 
-        pip install PyQt6 pyinstaller streamlit
+    - name: Create Launcher Script
+      run: |
+        cat << 'EOF' > run_app.py
+        import os
+        import sys
+        import subprocess
+        import time
+        import webbrowser
 
-
+        if __name__ == '__main__':
+            # Находим базовый путь внутри скомпилированного .app
+            if hasattr(sys, '_MEIPASS'):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(os.path.abspath(__file__))
+                
+            script_path = os.path.join(base_path, 'app.py')
+            
+            # Запускаем Streamlit из той же папки, где лежат все ресурсы
+            proc = subprocess.Popen(
+                [sys.executable, "-m", "streamlit", "run", script_path, "--server.headless", "true"],
+                cwd=base_path
+            )
+            
+            time.sleep(3)
+            webbrowser.open("http://localhost:8501")
+            
+            proc.wait()
+        EOF
 
     - name: Build Mac App
-
       run: |
-
-        # Собираем БЕЗ жесткой привязки к иконке, чтобы не было ошибок,
-
-        # и используем двоеточие (:) для путей мак-системы
-
+        # Упаковываем абсолютно всё через PyInstaller в нужные места
         pyinstaller --noconfirm --onedir --windowed \
-
           --name "FinaKostantin" \
-
+          --add-data "app.py:." \
           --add-data "logic:logic" \
-
           --add-data "data:data" \
-
           --add-data "assets:assets" \
+          run_app.py
 
-          main.py
-
-
-
-    - name: Sign App with Ad-Hoc Signature
-
+    - name: Sign App
       run: |
-
         codesign --force --deep --sign - dist/FinaKostantin.app
 
-
-
-    - name: Compress App to ZIP
-
+    - name: Compress App
       run: |
-
         cd dist
-
         zip -r FinaKostantin-Mac.zip FinaKostantin.app
 
-
-
     - name: Upload Finished App
-
       uses: actions/upload-artifact@v4
-
       with:
-
         name: FinaKostantin-Mac-SuperGift
-
         path: dist/FinaKostantin-Mac.zip
