@@ -2,11 +2,11 @@ name: Build macOS DMG
 
 on:
   push:
-    branches: [ main, master ] # Сборка запустится, как только ты загрузишь код
+    branches: [ main, master ]
 
 jobs:
   build:
-    runs-on: macos-latest # GitHub запускает виртуальный Mac!
+    runs-on: macos-latest
 
     steps:
     - name: Checkout code
@@ -29,11 +29,11 @@ jobs:
           --add-data "data:data" \
           --add-data "logic:logic" \
           --add-data "ui:ui" \
+          --icon "assets/icon.png" \
           main.py
 
     - name: Create DMG
       run: |
-        # Используем встроенную утилиту macOS для создания простого DMG
         hdiutil create -volname "FinaKostantin" -srcfolder dist/FinaKostantin.app -ov -format UDZO dist/FinaKostantin.dmg
 
     - name: Upload DMG Artifact
