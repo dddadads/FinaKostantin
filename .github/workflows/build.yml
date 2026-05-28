@@ -38,7 +38,8 @@ jobs:
             else:
                 base_path = os.path.dirname(os.path.abspath(__file__))
                 
-            script_path = os.path.join(base_path, 'app.py')
+            # Запускаем именно main.py внутри пакета
+            script_path = os.path.join(base_path, 'main.py')
             
             proc = subprocess.Popen(
                 [sys.executable, "-m", "streamlit", "run", script_path, "--server.headless", "true"],
@@ -53,7 +54,7 @@ jobs:
 
     - name: Build Mac App
       run: |
-        # Собираем приложение и жестко привязываем маковскую иконку icns
+        # Теперь упаковываем main.py вместо app.py
         pyinstaller --noconfirm --onedir --windowed \
           --name "FinaKostantin" \
           --icon="assets/icon.icns" \
@@ -62,6 +63,13 @@ jobs:
           --add-data "data:data" \
           --add-data "assets:assets" \
           run_app.py
+
+    - name: Copy Files to Bundle
+      run: |
+        cp main.py dist/FinaKostantin.app/Contents/MacOS/
+        cp -R logic dist/FinaKostantin.app/Contents/MacOS/
+        cp -R data dist/FinaKostantin.app/Contents/MacOS/
+        cp -R assets dist/FinaKostantin.app/Contents/MacOS/
 
     - name: Sign App
       run: |
