@@ -1,4 +1,4 @@
-name: Build macOS DMG
+name: Build macOS Application
 
 on:
   push:
@@ -22,38 +22,23 @@ jobs:
         python -m pip install --upgrade pip
         pip install PyQt6 pyinstaller
 
-    - name: Build .app with PyInstaller
+    - name: Build Mac App
       run: |
-        pyinstaller --noconfirm --onedir --windowed \
+        # Собираем чистое приложение в один файл-пакет
+        pyinstaller --noconfirm --onefile --windowed \
           --name "FinaKostantin" \
           --add-data "data:data" \
           --add-data "logic:logic" \
           --add-data "ui:ui" \
-          --icon "assets/icon.png" \
           main.py
 
-    - name: Create Self-Fixing DMG Structure
+    - name: Compress App to ZIP for easy download
       run: |
-        mkdir dmg_root
-        cp -R dist/FinaKostantin.app dmg_root/
-        
-        # Создаем автоматический скрипт-активатор прямо внутри диска
-        echo '#!/bin/bash' > dmg_root/Запустить_для_активации.command
-        echo 'xattr -cr "/Applications/FinaKostantin.app" 2>/dev/null' >> dmg_root/Запустить_для_активации.command
-        echo 'xattr -cr "./FinaKostantin.app" 2>/dev/null' >> dmg_root/Запустить_для_активации.command
-        echo 'open "/Applications/FinaKostantin.app" 2>/dev/null || open "./FinaKostantin.app"' >> dmg_root/Запустить_для_активации.command
-        echo 'echo "Готово! Программа активирована и запущена. Теперь Терминал можно закрыть."' >> dmg_root/Запустить_для_активации.command
-        chmod +x dmg_root/Запустить_для_активации.command
-        
-        # Создаем ссылку на папку Программы, чтобы было куда перетаскивать
-        ln -s /Applications dmg_root/Программы
+        cd dist
+        zip -r FinaKostantin-Mac.zip FinaKostantin.app
 
-    - name: Create DMG Disk
-      run: |
-        hdiutil create -volname "Установка FinaKostantin" -srcfolder dmg_root -ov -format UDZO dist/FinaKostantin.dmg
-
-    - name: Upload DMG Artifact
+    - name: Upload Finished App
       uses: actions/upload-artifact@v4
       with:
-        name: FinaKostantin-macOS-DMG
-        path: dist/FinaKostantin.dmg
+        name: FinaKostantin-Mac-SuperGift
+        path: dist/FinaKostantin-Mac.zip
