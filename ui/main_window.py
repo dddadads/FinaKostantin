@@ -35,24 +35,22 @@ class MainWindow(QWidget):
 
         self.auth_layout = QHBoxLayout()
         self.login_btn = QPushButton("Зарегистрироваться / Войти")
-        self.login_btn.setStyleSheet(
-            "QPushButton { background-color: #7C3AED; font-weight: bold; } QPushButton:hover { background-color: #8B5CF6; }")
+        self.login_btn.setStyleSheet("QPushButton { background-color: #7C3AED; font-weight: bold; } QPushButton:hover { background-color: #8B5CF6; }")
         self.login_btn.clicked.connect(self.open_register)
-
+        
         self.username_label = QLabel("")
         self.username_label.setStyleSheet("font-size: 15px; font-weight: 600; color: #F1F5F9; margin-right: 5px;")
-
+        
         self.menu_btn = QPushButton("⋮")
         self.menu_btn.setFixedWidth(35)
         self.menu_btn.setFixedHeight(35)
-        self.menu_btn.setStyleSheet(
-            "QPushButton { background-color: #1E293B; font-size: 18px; font-weight: bold; border-radius: 10px; padding: 0px; }")
+        self.menu_btn.setStyleSheet("QPushButton { background-color: #1E293B; font-size: 18px; font-weight: bold; border-radius: 10px; padding: 0px; }")
         self.menu_btn.clicked.connect(self.show_settings_menu)
 
         self.auth_layout.addWidget(self.login_btn)
         self.auth_layout.addWidget(self.username_label)
         self.auth_layout.addWidget(self.menu_btn)
-
+        
         self.username_label.hide()
         self.menu_btn.hide()
         top_menu.addLayout(self.auth_layout)
@@ -88,7 +86,7 @@ class MainWindow(QWidget):
         self.username_label.setText(username)
         self.username_label.show()
         self.menu_btn.show()
-
+        
         self.sidebar.set_user_greeting(username)
         self.sidebar.update_balance(balance)
 
@@ -110,7 +108,7 @@ class MainWindow(QWidget):
 
         reset_action.triggered.connect(self.action_reset_data)
         logout_action.triggered.connect(self.action_logout)
-
+        
         settings_menu.addAction(profile_action)
         settings_menu.addAction(reset_action)
         settings_menu.addSeparator()
@@ -122,8 +120,8 @@ class MainWindow(QWidget):
         from logic.database import DB_PATH
 
         reply = QMessageBox.question(
-            self,
-            "Сброс данных",
+            self, 
+            "Сброс данных", 
             "Вы уверены, что хотите полностью стереть всю историю операций и обнулить баланс? Это действие нельзя отменить.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
@@ -140,7 +138,7 @@ class MainWindow(QWidget):
 
                 self.sidebar.update_balance(0.0)
                 self.dashboard.refresh_content()
-
+                
                 QMessageBox.information(self, "Успех", "Все данные успешно сброшены!")
             except Exception as e:
                 QMessageBox.critical(self, "Ошибка", f"Не удалось сбросить данные: {e}")
