@@ -2,27 +2,57 @@ import streamlit as st
 import re
 from datetime import datetime
 from logic.database import init_db, register_user, get_last_user_data, add_transaction, get_transactions
-from logic.finance_manager import calculate_future_prediction
+import os
 
-# Настройка страницы (поддерживает и ПК, и Айфон)
+# Настройка страницы
 st.set_page_config(page_title="FinaKostantin", page_icon="💎", layout="wide")
 
 # Старт базы данных
 init_db()
 
-# --- МЕГА КРАСИВЫЙ НЕОНОВЫЙ ЦИФРОВОЙ ДИЗАЙН (CSS) ---
+# --- МЕГА КРАСИВЫЙ НЕОНОВЫЙ ЦИФРОВОЙ ДИЗАЙН БЕЗ БЕЛЫХ ФИГУР ---
 st.markdown("""
     <style>
-    /* Глубокий премиальный темный фон */
+    /* Главный фон — глубокий премиальный темный */
     .stApp {
         background-color: #0B0F19 !important;
         color: #F1F5F9 !important;
         font-family: '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif;
     }
     
-    /* Стилизация бокового меню (Sidebar) как на ПК */
-    [data-testid="stSidebar"] {
+    /* Полное уничтожение белых подложек Стримлита */
+    div[data-baseweb="select"], div[data-baseweb="input"], textarea, input, select {
         background-color: #111827 !important;
+        background: #111827 !important;
+        border: 1px solid #1E293B !important;
+        border-radius: 12px !important;
+        color: #F1F5F9 !important;
+    }
+    
+    /* Текст внутри выпадающих списков и полей */
+    div[data-testid="stSelectbox"] *, div[data-testid="stTextInput"] *, div[data-testid="stNumberInput"] * {
+        color: #F1F5F9 !important;
+        background-color: transparent !important;
+    }
+    
+    /* Выпадающее меню тегов (когда оно открыто) */
+    ul[role="listbox"], li[role="option"] {
+        background-color: #111827 !important;
+        color: #F1F5F9 !important;
+    }
+    li[role="option"]:hover {
+        background-color: #1E293B !important;
+    }
+    
+    /* Убираем красные/белые рамки при фокусе */
+    div[data-baseweb="select"]:focus-within, div[data-baseweb="input"]:focus-within {
+        border-color: #4F46E5 !important;
+        box-shadow: 0 0 10px rgba(79, 70, 229, 0.3) !important;
+    }
+
+    /* Стилизация бокового меню (Sidebar) */
+    [data-testid="stSidebar"] {
+        background-color: #090D16 !important;
         border-right: 1px solid #1E293B;
     }
     
@@ -69,7 +99,6 @@ st.markdown("""
         font-size: 15px;
         border: none;
         padding: 0px 24px;
-        transition: all 0.3s ease;
     }
     .stTabs [aria-selected="true"] {
         background-color: #4F46E5 !important;
@@ -77,7 +106,7 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(79, 70, 229, 0.4);
     }
     
-    /* Премиальные карточки истории из оригинального PyQt6 */
+    /* Карточки истории из оригинального ПК дизайна */
     .tx-card {
         background-color: #111827;
         padding: 20px 24px;
@@ -87,11 +116,6 @@ st.markdown("""
         display: flex;
         justify-content: space-between;
         align-items: center;
-        transition: transform 0.2s ease, border-color 0.2s ease;
-    }
-    .tx-card:hover {
-        transform: translateY(-2px);
-        border-color: #312E81;
     }
     .tx-title {
         color: #E2E8F0;
@@ -101,7 +125,6 @@ st.markdown("""
     .tx-info {
         color: #64748B;
         font-size: 14px;
-        font-weight: 400;
     }
     .tx-date {
         color: #475569;
@@ -112,21 +135,8 @@ st.markdown("""
         font-size: 20px;
         font-weight: 700;
     }
-
-    /* Футуристичные поля ввода */
-    input, select, textarea {
-        background-color: #111827 !important;
-        border: 2px solid #1E293B !important;
-        border-radius: 14px !important;
-        color: #FFF !important;
-        padding: 14px !important;
-        font-size: 15px !important;
-    }
-    input:focus {
-        border-color: #4F46E5 !important;
-    }
     
-    /* Фирменная фиолетовая кнопка ПЛЮС */
+    /* Кнопки */
     .stButton>button {
         background: linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%) !important;
         color: white !important;
@@ -136,56 +146,73 @@ st.markdown("""
         font-size: 16px;
         font-weight: bold;
         box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
-        transition: all 0.2s ease;
-    }
-    .stButton>button:hover {
-        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
     }
     
-    /* Блок Умного Прогноза */
-    .prediction-box {
-        color: #E2E8F0;
-        font-size: 16px;
-        line-height: 1.8;
-        padding: 26px;
-        background-color: #111827;
-        border-radius: 20px;
-        border: 1px solid #1E293B;
-        box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+    /* Красная кнопка сброса настроек */
+    .reset-btn>button {
+        background: #EF4444 !important;
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
+        height: 40px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- БОКОВАЯ ПАНЕЛЬ ДЛЯ ПК (Sidebar) ---
+# Стейт для выхода
+if "logout" not in st.session_state:
+    st.session_state.logout = False
+
+# --- СБОКУ: НАСТРОЙКИ И ВЫХОД ---
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; color: #FFF; font-size: 22px; font-weight: 800; margin-bottom: 25px;'>💎 FinaKostantin</h2>", unsafe_allow_html=True)
     
-    user_data = get_last_user_data()
+    user_data = get_last_user_data() if not st.session_state.logout else None
+    
     if user_data:
         username, balance, user_id = user_data
         txs = get_transactions(user_id)
         current_balance = balance + sum(tx[0] for tx in txs)
         
         st.markdown(f"""
-            <div style='text-align: center; padding: 15px; background-color: #1E293B; border-radius: 14px; border: 1px solid #334155;'>
-                <span style='color: #94A3B8; font-size: 12px;'>АКТИВНЫЙ ПРОФИЛЬ</span><br>
+            <div style='text-align: center; padding: 15px; background-color: #111827; border-radius: 14px; border: 1px solid #1E293B; margin-bottom: 30px;'>
+                <span style='color: #64748B; font-size: 11px;'>ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ</span><br>
                 <strong style='color: #FFF; font-size: 18px;'>👤 {username}</strong>
             </div>
         """, unsafe_allow_html=True)
-    else:
-        st.info("Профиль не создан")
-
-# --- ОСНОВНОЙ ЭКРАН (ПК И АЙФОН) ---
-if not user_data:
-    st.markdown("<h3 style='color: #FFF;'>👋 Добро пожаловать! Давайте создадим профиль сестры</h3>", unsafe_allow_html=True)
-    username = st.text_input("Имя пользователя", "Константин")
-    init_balance = st.number_input("Стартовый баланс (денег)", min_value=0.0, value=1000.0)
-    if st.button("Создать аккаунт", type="primary"):
-        user_id = register_user(username, "1234", init_balance)
-        if user_id:
+        
+        # Раздел настроек
+        st.markdown("<p style='color: #64748B; font-size: 12px; font-weight: bold;'>⚙️ УПРАВЛЕНИЕ СИСТЕМОЙ</p>", unsafe_allow_html=True)
+        
+        if st.button("🚪 Выйти из аккаунта", use_container_width=True):
+            st.session_state.logout = True
             st.rerun()
+            
+        st.write("---")
+        st.markdown("<p style='color: #EF4444; font-size: 12px; font-weight: bold;'>⚠️ ОПАСНАЯ ЗОНА</p>", unsafe_allow_html=True)
+        
+        # Сброс базы данных
+        st.markdown("<div class='reset-btn'>", unsafe_allow_html=True)
+        if st.button("🔥 Полный сброс данных", use_container_width=True):
+            from logic.database import DB_PATH
+            if os.path.exists(DB_PATH):
+                os.remove(DB_PATH)
+            st.session_state.logout = False
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.info("Вход не выполнен")
+
+# --- ОСНОВНОЙ ЭКРАН ---
+if not user_data:
+    st.markdown("<h3 style='color: #FFF; text-align: center;'>👋 Вход в систему FinaKostantin</h3>", unsafe_allow_html=True)
+    st.write("")
+    username = st.text_input("Имя сестры:", "Константин")
+    init_balance = st.number_input("Стартовый баланс кошелька:", min_value=0.0, value=1000.0)
+    if st.button("✨ Создать и войти", type="primary", use_container_width=True):
+        st.session_state.logout = False
+        user_id = register_user(username, "1234", init_balance)
+        st.rerun()
 else:
-    # Отрендерить красивый неоновый виджет баланса
+    # Главный виджет баланса
     st.markdown(f"""
         <div class="balance-box">
             <div class="balance-title">Текущее состояние счета</div>
@@ -193,27 +220,26 @@ else:
         </div>
     """, unsafe_allow_html=True)
 
-    # Вкладки управления
-    tab1, tab2, tab3 = st.tabs(["📊 Финансы и Долги", "🤖 Робот-Автоимпорт", "🔮 Прогноз Будущего"])
+    # Вкладки
+    tab1, tab2, tab3 = st.tabs(["📊 Финансы и Долги", "🤖 Робот-Автоимпорт", "🔮 Прогноз"])
 
     with tab1:
         st.markdown("<h4 style='color: #A5B4FC; margin-bottom: 15px;'>Внести операцию вручную</h4>", unsafe_allow_html=True)
         
-        # На ПК выстроится в ряд, на Айфоне — в столбик (идеальный адаптив!)
         col1, col2 = st.columns(2)
         with col1:
-            amount = st.number_input("Сумма (Расход пиши с минусом)", value=0.0, step=100.0)
-            tag = st.selectbox("Категория операции (Тег)", ["Обычный", "Купила", "Долг", "Работа"])
+            amount = st.number_input("Сумма (расход пиши со знаком минус):", value=0.0, step=100.0)
+            tag = st.selectbox("Категория (Тег):", ["Обычный", "Купила", "Долг", "Работа"])
         with col2:
-            extra = st.text_input("Дополнительная инфо", placeholder="Что купила / Когда вернуть")
+            extra = st.text_input("Комментарий / Информация:")
 
-        if st.button("➕ Записать транзакцию", type="primary"):
+        if st.button("➕ Записать транзакцию", type="primary", use_container_width=True):
             if amount != 0:
                 add_transaction(user_id, amount, tag, extra)
                 st.rerun()
 
         st.markdown("<br><h4 style='color: #A5B4FC; margin-bottom: 15px;'>📋 История операций</h4>", unsafe_allow_html=True)
-        history_filter = st.radio("Фильтр списка:", ["Все операции", "Только Долги"], horizontal=True)
+        history_filter = st.radio("Фильтр истории:", ["Все операции", "Только Долги"], horizontal=True)
         
         if txs:
             for amt, t, ext, dt in reversed(txs):
@@ -229,7 +255,6 @@ else:
                 except:
                     time_formatted = dt
 
-                # Отрисовка элитной карточки транзакции
                 st.markdown(f"""
                     <div class="tx-card">
                         <div>
@@ -244,11 +269,11 @@ else:
 
     with tab2:
         st.markdown("<h4 style='color: #A5B4FC; margin-bottom: 15px;'>🤖 Умный робот-автоимпорт</h4>", unsafe_allow_html=True)
-        st.write("Скопируй пуш или СМС от банка на Айфоне/Макбуке и вставь текст ниже:")
+        st.write("Вставь пуш или СМС от банка ниже:")
         
-        clipboard_text = st.text_area("Текст уведомления от банка:", height=130, placeholder="Перевод 500р от Иван И. / Покупка в супермаркете 1200р...")
+        clipboard_text = st.text_area("Текст уведомления:", height=130, placeholder="Покупка 450р, Магнит...")
         
-        if st.button("🤖 Распознать и занести в систему"):
+        if st.button("🤖 Распознать и внести в базу", use_container_width=True):
             if clipboard_text:
                 numbers = re.findall(r'[-+]?\d*\.\d+|\d+', clipboard_text.replace(",", "."))
                 if numbers:
@@ -264,17 +289,16 @@ else:
                         detected_amt = -abs(detected_amt)
                     
                     add_transaction(user_id, detected_amt, detected_tag, detected_ext)
-                    st.success("Робот успешно расшифровал и добавил запись!")
+                    st.success("Успешно добавлено роботом!")
                     st.rerun()
-                else:
-                    st.error("Ошибка: Робот не смог найти сумму денег в тексте.")
 
     with tab3:
-        st.markdown("<h4 style='color: #A5B4FC; margin-bottom: 15px;'>🔮 Математический прогноз доходов</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #A5B4FC; margin-bottom: 15px;'>🔮 Математический прогноз</h4>", unsafe_allow_html=True)
+        from logic.finance_manager import calculate_future_prediction
         prediction_text = calculate_future_prediction(txs)
         
         st.markdown(f"""
-            <div class="prediction-box">
+            <div style="color: #E2E8F0; font-size: 16px; line-height: 1.8; padding: 26px; background-color: #111827; border-radius: 20px; border: 1px solid #1E293B;">
                 {prediction_text.replace('\n', '<br>')}
             </div>
         """, unsafe_allow_html=True)
