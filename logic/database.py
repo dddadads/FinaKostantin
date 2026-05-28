@@ -1,9 +1,9 @@
 import sqlite3
 import os
 
+# Автоматически определяем корень проекта на сервере
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.abspath(os.path.join(CURRENT_DIR, "..", "data", "finance.db"))
-os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+DB_PATH = os.path.abspath(os.path.join(CURRENT_DIR, "..", "finance.db"))
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -30,8 +30,7 @@ def init_db():
     try:
         cursor.execute("SELECT tag FROM transactions LIMIT 1")
     except sqlite3.OperationalError:
-        cursor.execute("ALTER TABLE transactions ADD COLUMN tag TEXT NOT NULL DEFAULT 'Обычный'")
-        cursor.execute("ALTER TABLE transactions ADD COLUMN extra_info TEXT")
+        pass
     conn.commit()
     conn.close()
 
@@ -79,12 +78,18 @@ def add_transaction(user_id, amount, tag, extra_info):
         conn.close()
 
 def get_transactions(user_id):
+    if not os.path.exists(DB_PATH):
+        return []
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT amount, tag, extra_info, date FROM transactions WHERE user_id = ? ORDER BY id DESC",
-        (user_id,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    try:
+        cursor.execute(
+            "SELECT amount, tag, extra_info, date FROM transactions WHERE user_id = ? ORDER BY id DESC",
+            (user_id,)
+        )
+        rows = cursor.fetchall()
+        return rows
+    except sqlite3.OperationalError:
+        return []
+    finally:
+        conn.close()
