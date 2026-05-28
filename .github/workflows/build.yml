@@ -1,79 +1,97 @@
-name: Build macOS Application (Web View)
+name: Build macOS Application
+
+
 
 on:
+
   push:
+
     branches: [ main, master ]
 
+
+
 jobs:
+
   build:
+
     runs-on: macos-latest
 
+
+
     steps:
+
     - name: Checkout code
+
       uses: actions/checkout@v4
 
+
+
     - name: Set up Python
+
       uses: actions/setup-python@v5
+
       with:
-        python-version: '3.11'
+
+        python-version: '3.14'
+
+
 
     - name: Install dependencies
+
       run: |
+
         python -m pip install --upgrade pip
-        pip install pyinstaller streamlit
 
-    - name: Create Launcher Script
-      run: |
-        cat << 'EOF' > run_app.py
-        import os
-        import sys
-        import subprocess
-        import time
-        import webbrowser
+        pip install PyQt6 pyinstaller streamlit
 
-        if __name__ == '__main__':
-            # Находим путь к app.py внутри собранного пакета
-            base_path = os.path.dirname(sys.executable) if hasattr(sys, '_MEIPASS') else os.path.dirname(__file__)
-            script_path = os.path.join(base_path, 'app.py')
-            
-            # Запускаем локальный сервер Streamlit
-            proc = subprocess.Popen([sys.executable, "-m", "streamlit", "run", script_path, "--server.headless", "true"])
-            
-            # Даем серверу секунду на старт и открываем приложение
-            time.sleep(2)
-            webbrowser.open("http://localhost:8501")
-            
-            proc.wait()
-        EOF
+
 
     - name: Build Mac App
+
       run: |
+
+        # Собираем БЕЗ жесткой привязки к иконке, чтобы не было ошибок,
+
+        # и используем двоеточие (:) для путей мак-системы
+
         pyinstaller --noconfirm --onedir --windowed \
+
           --name "FinaKostantin" \
-          --add-data "app.py:." \
+
           --add-data "logic:logic" \
+
           --add-data "data:data" \
+
           --add-data "assets:assets" \
-          run_app.py
 
-    - name: Copy app.py to Bundle
-      run: |
-        cp app.py dist/FinaKostantin.app/Contents/MacOS/
-        cp -R logic dist/FinaKostantin.app/Contents/MacOS/
-        cp -R data dist/FinaKostantin.app/Contents/MacOS/
-        cp -R assets dist/FinaKostantin.app/Contents/MacOS/
+          main.py
 
-    - name: Sign App
+
+
+    - name: Sign App with Ad-Hoc Signature
+
       run: |
+
         codesign --force --deep --sign - dist/FinaKostantin.app
 
-    - name: Compress App
+
+
+    - name: Compress App to ZIP
+
       run: |
+
         cd dist
+
         zip -r FinaKostantin-Mac.zip FinaKostantin.app
 
+
+
     - name: Upload Finished App
+
       uses: actions/upload-artifact@v4
+
       with:
+
         name: FinaKostantin-Mac-SuperGift
+
         path: dist/FinaKostantin-Mac.zip
