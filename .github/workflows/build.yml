@@ -1,4 +1,4 @@
-name: Build macOS Application (Web View)
+name: Build macOS Application (Web View with Icon)
 
 on:
   push:
@@ -33,7 +33,6 @@ jobs:
         import webbrowser
 
         if __name__ == '__main__':
-            # Находим базовый путь внутри скомпилированного .app
             if hasattr(sys, '_MEIPASS'):
                 base_path = sys._MEIPASS
             else:
@@ -41,7 +40,6 @@ jobs:
                 
             script_path = os.path.join(base_path, 'app.py')
             
-            # Запускаем Streamlit из той же папки, где лежат все ресурсы
             proc = subprocess.Popen(
                 [sys.executable, "-m", "streamlit", "run", script_path, "--server.headless", "true"],
                 cwd=base_path
@@ -55,9 +53,10 @@ jobs:
 
     - name: Build Mac App
       run: |
-        # Упаковываем абсолютно всё через PyInstaller в нужные места
+        # Собираем приложение и жестко привязываем маковскую иконку icns
         pyinstaller --noconfirm --onedir --windowed \
           --name "FinaKostantin" \
+          --icon="assets/icon.icns" \
           --add-data "app.py:." \
           --add-data "logic:logic" \
           --add-data "data:data" \
