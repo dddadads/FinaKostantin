@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, 
     QPushButton, QComboBox, QMessageBox, QMenu, QDateEdit
 )
 from PyQt6.QtCore import Qt, QDate
@@ -22,7 +22,7 @@ class AddTransactionDialog(QDialog):
                 background-color: #7C3AED; border: none; border-radius: 14px; padding: 14px; color: white; font-size: 15px; font-weight: bold;
             }
             QPushButton#SaveBtn:hover { background-color: #8B5CF6; }
-
+            
             QPushButton#HelpBtn {
                 background-color: #334155; color: #E2E8F0; border: none; border-radius: 20px; font-size: 18px; font-weight: bold; outline: none;
             }
@@ -50,7 +50,7 @@ class AddTransactionDialog(QDialog):
         self.product_input = QLineEdit()
         self.product_input.setPlaceholderText("Что купила? (например: Кроссовки)")
         self.product_label = QLabel("Продукт:")
-
+        
         self.debt_combo = QComboBox()
         self.debt_combo.addItems(["Мы взяли в долг", "У нас взяли в долг"])
         self.debt_combo.currentTextChanged.connect(self.handle_debt_type_change)
@@ -71,7 +71,7 @@ class AddTransactionDialog(QDialog):
         self.help_btn.setObjectName("HelpBtn")
         self.help_btn.setFixedSize(40, 40)
         self.help_btn.clicked.connect(self.show_tags_hint)
-
+        
         self.save_btn = QPushButton("Добавить")
         self.save_btn.setObjectName("SaveBtn")
         self.save_btn.clicked.connect(self.save_data)
@@ -80,7 +80,7 @@ class AddTransactionDialog(QDialog):
         bottom_layout.addSpacing(12)
         bottom_layout.addWidget(self.save_btn)
         self.main_layout.addLayout(bottom_layout)
-
+        
         self.setLayout(self.main_layout)
 
         self.result_amount = 0.0
@@ -109,8 +109,8 @@ class AddTransactionDialog(QDialog):
 
     def clear_dynamic_layout(self):
         widgets = [
-            self.product_label, self.product_input,
-            self.debt_label, self.debt_combo,
+            self.product_label, self.product_input, 
+            self.debt_label, self.debt_combo, 
             self.date_label, self.date_input,
             self.work_label, self.work_combo
         ]
@@ -139,7 +139,7 @@ class AddTransactionDialog(QDialog):
             return
 
         self.result_tag = self.tag_combo.currentText()
-
+        
         if self.result_tag == "Купила":
             self.result_extra = self.product_input.text().strip()
             if not self.result_extra:
