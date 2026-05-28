@@ -32,9 +32,25 @@ jobs:
           --icon "assets/icon.png" \
           main.py
 
-    - name: Create DMG
+    - name: Create Self-Fixing DMG Structure
       run: |
-        hdiutil create -volname "FinaKostantin" -srcfolder dist/FinaKostantin.app -ov -format UDZO dist/FinaKostantin.dmg
+        mkdir dmg_root
+        cp -R dist/FinaKostantin.app dmg_root/
+        
+        # Создаем автоматический скрипт-активатор прямо внутри диска
+        echo '#!/bin/bash' > dmg_root/Запустить_для_активации.command
+        echo 'xattr -cr "/Applications/FinaKostantin.app" 2>/dev/null' >> dmg_root/Запустить_для_активации.command
+        echo 'xattr -cr "./FinaKostantin.app" 2>/dev/null' >> dmg_root/Запустить_для_активации.command
+        echo 'open "/Applications/FinaKostantin.app" 2>/dev/null || open "./FinaKostantin.app"' >> dmg_root/Запустить_для_активации.command
+        echo 'echo "Готово! Программа активирована и запущена. Теперь Терминал можно закрыть."' >> dmg_root/Запустить_для_активации.command
+        chmod +x dmg_root/Запустить_для_активации.command
+        
+        # Создаем ссылку на папку Программы, чтобы было куда перетаскивать
+        ln -s /Applications dmg_root/Программы
+
+    - name: Create DMG Disk
+      run: |
+        hdiutil create -volname "Установка FinaKostantin" -srcfolder dmg_root -ov -format UDZO dist/FinaKostantin.dmg
 
     - name: Upload DMG Artifact
       uses: actions/upload-artifact@v4
